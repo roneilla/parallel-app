@@ -1,17 +1,3 @@
-Handlebars.registerHelper('convertToSeconds', function (a) {
-  var minutes = Math.floor(a / 60000);
-  var seconds = ((a % 60000) / 1000).toFixed(0);
-  return minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
-});
-
-Handlebars.registerHelper('checkPlayer', function (a) {
-  if (a == true) {
-    return 'Playing!';
-  } else {
-    return 'Nothing playing!';
-  }
-});
-
 (function () {
   /**
    * Obtains parameters from the hash of the URL
@@ -146,25 +132,65 @@ Handlebars.registerHelper('checkPlayer', function (a) {
       false
     );
 
+    var songName, position, duration;
+
+    function getSongName() {
+      var settings = {
+        url: 'https://api.spotify.com/v1/me/player/currently-playing/',
+        method: 'GET',
+        timeout: 0,
+        headers: {
+          Authorization: 'Bearer ' + access_token,
+        },
+      };
+
+      $.ajax(settings).done(function (response) {
+        console.log(response.item.name);
+        songName = String(response.item.name);
+        position = response.progress_ms;
+        duration = response.item.duration_ms;
+      });
+    }
+
+    function refreshSongInfo() {
+      getSongName();
+
+      var settings = {
+        url: '/partyRooms',
+        method: 'PUT',
+        timeout: 0,
+        contentType: 'application/json',
+        data: JSON.stringify({
+          songName: songName,
+          position: position,
+          duration: duration,
+        }),
+      };
+
+      $.ajax(settings).done(function (response) {
+        console.log(response);
+      });
+    }
+
+    setInterval(refreshSongInfo, 100);
+
     document.getElementById('sync-button').addEventListener(
       'click',
       function () {
-        var party_position = 50000;
-
-        var settings = {
-          url:
-            'https://api.spotify.com/v1/me/player/seek?position_ms=' +
-            party_position,
-          method: 'PUT',
-          timeout: 0,
-          headers: {
-            Authorization: 'Bearer ' + access_token,
-          },
-        };
-
-        $.ajax(settings).done(function (response) {
-          console.log(response);
-        });
+        // var party_position = 50000;
+        // var settings = {
+        //   url:
+        //     'https://api.spotify.com/v1/me/player/seek?position_ms=' +
+        //     party_position,
+        //   method: 'PUT',
+        //   timeout: 0,
+        //   contentType: 'application/json',
+        // };
+        // $.ajax(settings).done(function (response) {
+        //   console.log(response);
+        // });
+        // console.log('hello world');
+        // refreshSongInfo();
       },
       false
     );

@@ -14,6 +14,6 @@ Handlebars.registerHelper('checkPlayer', function (a) {
 
 Handlebars.registerHelper('progressBar', function (a, b) {
   var progress = a / b;
-  var progress2 = Math.ceil(progress * 100);
+  var progress2 = progress * 100;
   return progress2 + '%';
 });

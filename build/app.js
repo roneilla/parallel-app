@@ -1,33 +1,34 @@
-/**
- * This is an example of a basic node.js script that performs
- * the Authorization Code oAuth2 flow to authenticate against
- * the Spotify Accounts.
- *
- * For more information, read
- * https://developer.spotify.com/web-api/authorization-guide/#authorization_code_flow
- */
-
 var express = require('express'); // Express web server framework
 var request = require('request'); // "Request" library
 var cors = require('cors');
 var querystring = require('querystring');
 var cookieParser = require('cookie-parser');
 
+const mongodb = require('mongodb');
+const port = 8888;
+const url = 'mongodb://localhost:27017/parallel';
+
 var client_id = 'b7b0dc3656af41c79fc04d7aac97dc1e'; // Your client id
 var client_secret = '420b080e54f84a63b70730125b2e34e9'; // Your secret
 var redirect_uri = 'http://10.2.45.87:8888/callback'; // Your redirect uri
 
-/**
- * Generates a random string containing numbers and letters
- * @param  {number} length The length of the string
- * @return {string} The generated string
- */
 var generateRandomString = function (length) {
   var text = '';
   var possible =
     'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
   for (var i = 0; i < length; i++) {
+    text += possible.charAt(Math.floor(Math.random() * possible.length));
+  }
+  return text;
+};
+
+var generateServerID = function () {
+  var text = '';
+  var possible =
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+
+  for (var i = 0; i < 6; i++) {
     text += possible.charAt(Math.floor(Math.random() * possible.length));
   }
   return text;
@@ -40,13 +41,12 @@ var app = express();
 app
   .use(express.static(__dirname + '/public'))
   .use(cors())
+  .use(express.json())
   .use(cookieParser());
 
 app.get('/login', function (req, res) {
   var state = generateRandomString(16);
   res.cookie(stateKey, state);
-
-  // your application requests authorization
   var scope =
     'user-read-private user-read-email user-read-currently-playing user-modify-playback-state';
   res.redirect(
@@ -62,9 +62,6 @@ app.get('/login', function (req, res) {
 });
 
 app.get('/callback', function (req, res) {
-  // your application requests refresh and access tokens
-  // after checking the state parameter
-
   var code = req.query.code || null;
   var state = req.query.state || null;
   var storedState = req.cookies ? req.cookies[stateKey] : null;
@@ -103,13 +100,9 @@ app.get('/callback', function (req, res) {
           headers: { Authorization: 'Bearer ' + access_token },
           json: true,
         };
-
-        // use the access token to access the Spotify Web API
         request.get(options, function (error, response, body) {
           console.log(body);
         });
-
-        // we can also pass the token to the browser to make requests from there
         res.redirect(
           '/#' +
             querystring.stringify({
@@ -130,7 +123,6 @@ app.get('/callback', function (req, res) {
 });
 
 app.get('/refresh_token', function (req, res) {
-  // requesting access token from refresh token
   var refresh_token = req.query.refresh_token;
   var authOptions = {
     url: 'https://accounts.spotify.com/api/token',
@@ -156,19 +148,69 @@ app.get('/refresh_token', function (req, res) {
   });
 });
 
-// app.put('/pauseMusic', function (req, res) {
-//   var options = {
-//     url: 'https://api.spotify.com/v1/me/player/pause',
-//     headers: {
-//       Authorization: 'Bearer ' + access_token,
-//     },
-//   };
+mongodb.MongoClient.connect(url, (error, client) => {
+  if (error) return console.log(error);
+  const db = client.db();
 
-//   request.put(options, function (error, response) {
-//     if (error) throw new Error(error);
-//     console.log(response.body);
-//   });
-// });
+  app.get('/', (req, res) => {
+    res.send("<a href='/partyRooms'>VIEW CURRENTLY PLAYED SONGS HERE!!</a>");
+  });
 
-console.log('Listening on 8888');
-app.listen(8888);
+  // GET method
+  app.get('/partyRooms', (req, res) => {
+    const _id = new mongodb.ObjectID(req.params.id);
+    db.collection('partyRooms')
+      .find({})
+      .toArray(function (err, item) {
+        if (err) {
+          res.send({
+            error: 'An error has occured',
+          });
+        } else {
+          res.send(item);
+        }
+      });
+  });
+
+  // POST method
+  app.post('/partyRooms', (req, res) => {
+    console.log(req);
+    const entry = {
+      serverId: req.body.serverId,
+      serverName: req.body.serverName,
+      hostName: req.body.hostName,
+      songName: req.body.songName,
+      position: req.body.position,
+      duration: req.body.duration,
+    };
+    db.collection('partyRooms').insertOne(entry, (err, result) => {
+      if (err) {
+        res.send({
+          error: 'An error has occured',
+        });
+      } else {
+        res.send(result.ops[0]);
+      }
+    });
+  });
+
+  // PUT REQUESTS
+  app.put('/partyRooms/:id', (req, res) => {
+    const _id = new mongodb.ObjectID(req.params.id); // Mongo wants _id to be an "ObjectID" (not just a "string").
+    const entry = {
+      songName: req.body.songName,
+      position: req.body.position,
+      duration: req.body.duration,
+    };
+    db.collection('partyRooms').update({ _id: _id }, entry, (err, item) => {
+      if (err) {
+        res.send({ error: 'An error has occured' });
+      } else {
+        res.send(item);
+      }
+    });
+  });
+});
+
+console.log('Listening on ' + port);
+app.listen(port);

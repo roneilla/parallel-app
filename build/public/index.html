@@ -8,11 +8,16 @@
 </head>
 
 <body id="background">
+    <script>
+        function validateRoom(form) {
+            console.log(form.serverid.value);
+        }
+    </script>
     <div class="container">
         <nav>
             <img src="logo.svg" alt="Parallel Logo" class="nav-logo">
             <ul>
-                <li><a href="#">Host</a></li>
+                <li><a id="host-button" href="#">Host</a></li>
                 <li><a href="#">Join</a></li>
                 <li><a href="#">Me</a></li>
                 <li><a href="#">About</a></li>
@@ -23,6 +28,16 @@
             <h1 class="title">Parallel</h1>
             <button class="authorize-button" onclick="window.location.href= '/login'">Log in with Spotify</button>
         </div>
+        <form id="create-form">
+            <h2 class="host-title">Host a Party</h2>
+            <h3>Server ID</h3>
+            <input type="text" placeholder="Server ID" name="serverId" id="serverId" />
+            <h3>Server Name</h3>
+            <input type="text" placeholder="Server Name" name="serverName" id="serverName" />
+            <h3>Host Name</h3>
+            <input type="text" placeholder="Host Name" name="hostName" id="hostName" />
+            <button class="create-button" type="submit">Create Room</button>
+        </form>
         <div id="loggedin">
             <div id="room-info">
             </div>
@@ -44,7 +59,6 @@
           <div class="album-photo">
             <img class="album-img" src="{{item.album.images.0.url}}" alt="">
           </div>
-          <!-- <img src="{{images.0.url}}" alt=""> -->
           <h2 class="player-title">{{item.name}}</h2>
           <p class="player-subtitle">{{item.artists.[0].name}}</p>
           <div class="player-bar">
@@ -87,6 +101,7 @@
         }, 10);
     </script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/2.0.0-alpha.1/handlebars.min.js"></script>
+    <script src="form.js"></script>
     <script src="helpers.js"></script>
     <script src="index.js"></script>
 </body>

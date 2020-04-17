@@ -1,8 +1,7 @@
 {
   "author": "Spotify",
-  "name": "web-api-auth-examples",
-  "description": "Basic examples of the Spotify authorization flows through OAuth 2",
-  "version": "0.0.2",
+  "name": "Parallel",
+  "description": "Spotify Listening Party App",
   "dependencies": {
     "cookie-parser": "^1.4.5",
     "cors": "^2.8.5",
